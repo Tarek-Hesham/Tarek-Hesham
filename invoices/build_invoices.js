@@ -28,8 +28,8 @@ function t(text, o = {}) {
 function p(runs, o = {}) {
   const map = { center: AlignmentType.CENTER, end: AlignmentType.RIGHT, start: undefined };
   return new Paragraph({
-    bidirectional: true,
-    alignment: map[o.align || "start"],
+    bidirectional: !o.ltrPara,
+    alignment: o.ltrPara ? ({ start: AlignmentType.LEFT, end: AlignmentType.LEFT, center: AlignmentType.CENTER })[o.align || "start"] : map[o.align || "start"],
     spacing: { before: o.before || 0, after: o.after || 0, line: o.line },
     border: o.border,
     children: Array.isArray(runs) ? runs : [runs],
@@ -92,257 +92,180 @@ function fieldRow(label, wl, wv, o = {}) {
 function save(doc, name) {
   return Packer.toBuffer(doc).then((b) => { fs.writeFileSync(path.join(__dirname, name), b); console.log("wrote", name); });
 }
-function makeDoc(children, headerKids, footerKids) {
+function makeDoc(children, headerKids, footerKids, o = {}) {
+  const page = { size: { width: PAGE_W, height: PAGE_H }, margin: { top: o.top || MARGIN, bottom: o.bottom || MARGIN, left: o.side || MARGIN, right: o.side || MARGIN, header: 0, footer: 0 } };
+  if (o.pageBorder) page.borders = { pageBorderTop: o.pageBorder, pageBorderBottom: o.pageBorder, pageBorderLeft: o.pageBorder, pageBorderRight: o.pageBorder, pageBorders: { offsetFrom: "page" } };
   return new Document({
     creator: "Invoice",
     styles: { default: { document: { run: { font: FONT, size: 20 } } } },
     sections: [{
-      properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: MARGIN + 200, bottom: MARGIN, left: MARGIN, right: MARGIN, header: 0, footer: 0 } } },
+      properties: { page },
       headers: { default: new Header({ children: [new Paragraph({ children: headerKids })] }) },
       footers: { default: new Footer({ children: [new Paragraph({ children: footerKids })] }) },
       children,
     }],
   });
 }
+const pad0 = { top: 0, bottom: 0, left: 0, right: 0 };
+const blank = (w) => cell(p(t("")), { w });
 
 // =====================================================================
-// 1) النخبة — مستوحاة من التصميم الثالث (رأس داكن + جدول برتقالي/بني)
+// التصميم الأول (مثلثات ملونة) — الرواد للبلاستيك
 // =====================================================================
-function wytc() {
-  const OR = "E8532B", DK = "2D2D2D", TINT = "FDEDE6", GR = "F3F3F3";
-  const kids = [];
-
-  // رأس: [شعار] [بيانات الشركة] [عنوان الفاتورة + بياناتها]
-  const metaRows = [["رقم الفاتورة:", ""], ["تاريخ الفاتورة:", ""], ["تاريخ الاستحقاق:", ""]];
-  const meta = table([1500, 1700], metaRows.map(([l]) => row([
-    cell(p(t(l, { size: 9, color: "F3B49E" })), { w: 1500, m: { top: 30, bottom: 30, left: 40, right: 40 } }),
-    cell(p(t("", { size: 9, color: "FFFFFF" })), { w: 1700, m: { top: 30, bottom: 30, left: 40, right: 40 }, borders: { ...noBorders, bottom: line("8A8A8A", 4, BorderStyle.DOTTED) } }),
-  ])));
-  kids.push(table([2600, 4006, 3600], [row([
-    cell([p(t("النخبة", { bold: true, size: 26, color: OR }), { align: "center" }), p(t("AL-NOKHBA PLASTICS", { bold: true, size: 7.5, color: DK, spacing: 40, ltr: true }), { align: "center" })], { w: 2600, fill: "FFFFFF", borders: { ...noBorders, top: line(OR, 24), bottom: line(OR, 24) } }),
+function design1() {
+  const HD = "D7D7D7", BD = line("4A4A4A", 6), kids = [];
+  const W = [1030, 1065, 2235, 4021, 1855]; // رقم، الكمية، السعر، وصف المنتج، الإجمالي
+  // العنوان + الزخرفة
+  kids.push(table([5600, 4606], [row([
     cell([
-      p(t("النخبة للصناعات البلاستيكية", { bold: true, size: 14, color: DK }), { align: "center" }),
-      p(t("والعبوات ومواد التغليف", { bold: true, size: 12, color: OR }), { align: "center", after: 80 }),
-      p(t("العنوان: ................................................", { size: 8.5, color: "555555" }), { align: "center" }),
-      p(t("السجل التجاري: ....................", { size: 8.5, color: "555555" }), { align: "center", after: 40 }),
-      p(t("هاتف: ................   البريد: ................", { size: 8.5, color: "555555" }), { align: "center" }),
-    ], { w: 4006, fill: TINT, borders: { ...noBorders, top: line(OR, 24), bottom: line(OR, 24) } }),
-    cell([
-      p(t("فاتورة مبيعات", { bold: true, size: 22, color: OR }), { align: "center", after: 0 }),
-      p(t("SALES INVOICE", { size: 8, color: "BBBBBB", spacing: 60, ltr: true }), { align: "center", after: 100 }),
-      meta,
-    ], { w: 3600, fill: DK, m: { top: 140, bottom: 140, left: 160, right: 160 } }),
-  ], 2100)]));
-  kids.push(spacer(160));
-
-  // بيانات العميل
-  const lw = 1400, vw = 3600, gap = 206;
-  kids.push(table([lw, vw, gap, lw, vw], [
-    row([cell(p(t("فاتورة إلى", { bold: true, size: 11, color: "FFFFFF" })), { w: lw + vw, span: 2, fill: OR }), cell(p(t("")), { w: gap }), cell(p(t("بيانات إضافية", { bold: true, size: 11, color: "FFFFFF" })), { w: lw + vw, span: 2, fill: DK })]),
-    row([...fieldRow("اسم العميل:", lw, vw), cell(p(t("")), { w: gap }), ...fieldRow("الرقم الضريبي:", lw, vw)]),
-    row([...fieldRow("العنوان:", lw, vw), cell(p(t("")), { w: gap }), ...fieldRow("طريقة الدفع:", lw, vw)]),
-    row([...fieldRow("الجوال:", lw, vw), cell(p(t("")), { w: gap }), ...fieldRow("المندوب:", lw, vw)]),
-  ]));
-  kids.push(spacer(180));
-
-  // جدول الأصناف
-  const W = [700, 900, 2400, 2706, 1700, 1800];
-  const hd = ["بند", "الكمية", "الصنف", "الوصف / النوع", "سعر الوحدة", "المبلغ"];
-  const hb = allBorders(line("FFFFFF", 6));
-  const rows = [row(hd.map((h, i) => cell(p(t(h, { bold: true, color: "FFFFFF", size: 10.5 }), { align: "center" }), { w: W[i], fill: i % 2 ? "B5401F" : OR, borders: hb })), 460)];
-  for (let i = 1; i <= 15; i++) {
-    const fill = i % 2 ? "FFFFFF" : "FFF4EF";
-    const b = { ...allBorders(line("E4C9BE", 4)) };
-    rows.push(row(W.map((w, c) => cell(p(t(c === 0 ? i : "", { bold: c === 0, color: c === 0 ? OR : "222222" }), { align: "center" }), { w, fill: c === 2 ? (i % 2 ? "FDF8F5" : "FCEDE6") : fill, borders: b })), 400));
-  }
-  kids.push(table(W, rows));
-  kids.push(spacer(200));
-
-  // الإجماليات + ملاحظات
-  const tw = [2300, 1400];
-  const tot = (l, fillL, fillV, colL, colV, bold) => row([
-    cell(p(t(l, { bold: true, color: colL })), { w: tw[0], fill: fillL, borders: { ...noBorders, bottom: line("FFFFFF", 6) } }),
-    cell(p(t("ج.م", { size: 9, color: colV, bold })), { w: tw[1], fill: fillV, borders: { ...noBorders, bottom: line("FFFFFF", 6) } }),
-  ], 420);
-  const totals = table(tw, [
-    tot("الإجمالي:", "D9D9D9", GR, DK, "777777"),
-    tot("قيمة الخصم:", "D9D9D9", GR, DK, "777777"),
-    tot("ضريبة القيمة المضافة 14%:", "D9D9D9", GR, DK, "777777"),
-    tot("المجموع المستحق:", "6B2E17", DK, "FFFFFF", "F3B49E", true),
-  ]);
-  const notes = [
-    p(t("الشروط والملاحظات", { bold: true, size: 11, color: OR }), { after: 60, border: { bottom: line(OR, 8) } }),
-    p(t("• المبلغ كتابةً: ..............................................................", { size: 9.5 }), { before: 80, after: 60 }),
-    p(t("• البضاعة المباعة لا ترد ولا تستبدل إلا وفقاً للسياسة المعتمدة.", { size: 9.5, color: "555555" }), { after: 40 }),
-    p(t("• يرجى ذكر رقم الفاتورة عند السداد.", { size: 9.5, color: "555555" }), { after: 180 }),
-    table([3100, 3100], [row([
-      cell([p(t("توقيع المستلم", { bold: true }), { align: "center", after: 360 }), p(t("....................................", { color: "999999" }), { align: "center" })], { w: 3100 }),
-      cell([p(t("الختم والتوقيع", { bold: true }), { align: "center", after: 360 }), p(t("....................................", { color: "999999" }), { align: "center" })], { w: 3100 }),
-    ])]),
-  ];
-  kids.push(table([6306, 200, 3700], [row([
-    cell(notes, { w: 6306, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-    cell(p(t("")), { w: 200 }),
-    cell(totals, { w: 3700, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
+      p(t("فاتورة مبيعات", { bold: true, size: 26, color: "111111" }), { align: "center" }),
+      p(t("I N V O I C E", { bold: true, size: 12, color: "111111", spacing: 160, ltr: true }), { align: "center" }),
+    ], { w: 5600, m: pad0 }),
+    cell(p(img("d1_motif.png", 120, 31), { align: "center", before: 260 }), { w: 4606, m: pad0 }),
   ])]));
-  kids.push(spacer(240));
-  kids.push(table([CW], [row([cell(p(t("شكراً لتعاملكم معنا!", { bold: true, size: 12, color: "FFFFFF" }), { align: "center" }), { w: CW, fill: "6B2E17", borders: { ...noBorders, top: line(OR, 18) } })], 480)]));
-
-  return save(makeDoc(kids, [floatImg("wytc_top.png", 794, 14, 0, 0)], [floatImg("wytc_bottom.png", 794, 14, 0, 1123 - 14)]), "فاتورة_النخبة.docx");
-}
-
-// =====================================================================
-// 2) اللؤلؤة — مستوحاة من التصميم الثاني (أشرطة مائلة + أعمدة داكنة)
-// =====================================================================
-function gawhara() {
-  const BL = "2F6DB5", DK = "1F2A3A", LG = "F3F5F8";
-  const kids = [];
-  // رأس رمادي فاتح: العنوان يمين والشعار يسار
-  kids.push(table([5103, 5103], [row([
-    cell([
-      p(t("فاتورة مبيعات", { bold: true, size: 26, color: DK }), { after: 40 }),
-      p(t("SALES INVOICE", { size: 9, color: BL, spacing: 80, ltr: true }), { after: 120 }),
-      table([1500, 2600], [
-        row(fieldRow("رقم الفاتورة:", 1500, 2600, { size: 9.5 })),
-        row(fieldRow("التاريخ:", 1500, 2600, { size: 9.5 })),
-      ]),
-    ], { w: 5103, fill: LG, m: { top: 260, bottom: 260, left: 200, right: 300 } }),
-    cell([p(t("اللؤلؤة", { bold: true, size: 34, color: BL }), { align: "center" }), p(t("لصناعة البلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: DK }), { align: "center", before: 40 })], { w: 5103, fill: LG, m: { top: 200, bottom: 200, left: 200, right: 100 } }),
-  ])]));
+  kids.push(p(t("الرواد للبلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: "555555" }), { align: "center", before: 80, after: 160 }));
+  // الحقول
+  const lw = 1500, vw = 4800;
+  kids.push(table([lw, vw, CW - lw - vw], ["اسم العميل :", "التـاريـخ :", "رقم الفاتـورة :"].map((l) => row([...fieldRow(l, lw, vw, { size: 11 }), blank(CW - lw - vw)], 420))));
   kids.push(spacer(260));
-
-  // بيانات العميل (عمودان)
-  const lw = 1550, vw = 3350, gap = 406;
-  const r2 = (a, b) => row([...fieldRow(a, lw, vw), cell(p(t("")), { w: gap }), ...fieldRow(b, lw, vw)]);
-  kids.push(table([lw, vw, gap, lw, vw], [
-    r2("اسم العميل:", "العنوان:"),
-    r2("اسم البنك:", "رقم الهاتف الأول:"),
-    r2("رقم الحساب:", "رقم الهاتف الثاني:"),
-  ]));
-  kids.push(spacer(260));
-
-  // جدول الأصناف: رؤوس داكنة منفصلة بفواصل بيضاء + عمود الرقم داكن
-  const W = [800, 4206, 1700, 1500, 2000];
-  const hd = ["الرقم", "اسم المنتج", "السعر", "الكمية", "الإجمالي"];
-  const sep = allBorders(line("FFFFFF", 18));
-  const rows = [row(hd.map((h, i) => cell(p(t(h, { bold: true, color: "FFFFFF", size: 10.5 }), { align: "center" }), { w: W[i], fill: i === 0 ? BL : DK, borders: sep })), 480)];
-  for (let i = 1; i <= 13; i++) {
-    const fill = i % 2 ? "F4F4F4" : "FFFFFF";
-    rows.push(row(W.map((w, c) => cell(p(t(c === 0 ? i : "", { color: c === 0 ? "FFFFFF" : "222222", bold: c === 0 }), { align: "center" }), {
-      w, fill: c === 0 ? DK : fill,
-      borders: c === 0 ? { ...noBorders, left: line("FFFFFF", 18), right: line("FFFFFF", 18) } : { ...noBorders, bottom: line("E3E3E3", 4) },
-    })), 400));
-  }
-  kids.push(table(W, rows));
-  kids.push(spacer(220));
-
-  // سفلي: سياسة + توقيع (يمين) / إجماليات (يسار)
-  const tw = [1900, 2100];
-  const tr = (l, fill, col, v, big) => row([
-    cell(p(t(l, { bold: true, color: col, size: big ? 11 : 10 })), { w: tw[0], fill }),
-    cell(p(t(v, { color: col, size: 9, bold: big }), { align: "end" }), { w: tw[1], fill }),
-  ], 420);
-  const totals = table(tw, [
-    tr("الإجمالي", "FFFFFF", DK, "ج.م"),
-    tr("الخصم", "FFFFFF", DK, "ج.م"),
-    tr("الضريبة 14%", "FFFFFF", DK, "ج.م"),
-    tr("الإجمالي النهائي", BL, "FFFFFF", "ج.م", true),
-  ], { borders: { ...noBorders, insideHorizontal: line("E3E3E3", 4), insideVertical: NONE } });
-  const left = [
-    totals,
-    p(t("المبلغ المستحق  Amount Due", { size: 10, color: "666666" }), { before: 160 }),
-    p(t("............................ ج.م", { bold: true, size: 16, color: DK }), { before: 60 }),
-  ];
-  const right = [
-    p(t("الاستبدال والاسترجاع:", { bold: true, size: 11, color: DK }), { after: 60 }),
-    p(t("الاستبدال والاسترجاع خلال فترة 14 يوماً من تاريخ استلام السلعة، بشرط سلامة العبوات وعدم استخدامها.", { size: 9.5, color: "555555" }), { after: 140, line: 300 }),
-    p(t("ملاحظات:", { bold: true, size: 11, color: DK }), { after: 60 }),
-    writeLines(2, 5306, "BDBDBD"),
-    p(t(""), { after: 200 }),
-    p(t("توقيع البائع", { bold: true, size: 12, color: DK }), { align: "center", after: 360 }),
-    p(t("______________________", { color: "888888" }), { align: "center" }),
-  ];
-  kids.push(table([5306, 500, 4400], [row([
-    cell(right, { w: 5306, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-    cell(p(t("")), { w: 500 }),
-    cell(left, { w: 4400, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-  ])]));
+  // رأس الجدول منفصل
+  const hd = ["رقم", "الكمية", "السعـــر", "وصـف المنتـج", "الإجمالـي"];
+  kids.push(table(W, [row(hd.map((h, i) => cell(p(t(h, { bold: true, size: 11 }), { align: "center" }), { w: W[i], fill: HD, borders: allBorders(BD) })), 520)]));
   kids.push(spacer(200));
-  kids.push(p(t("اللؤلؤة لصناعة البلاستيك ومواد التعبئة والتغليف", { size: 9, color: BL, bold: true }), { align: "center" }));
-  kids.push(p(t("العنوان: ........................   هاتف: ........................", { size: 8.5, color: "777777" }), { align: "center" }));
-
-  return save(makeDoc(kids, [floatImg("gawhara_top.png", 794, 40, 0, 0)], [floatImg("gawhara_bottom.png", 794, 40, 0, 1123 - 40)]), "فاتورة_اللؤلؤة.docx");
-}
-
-// =====================================================================
-// 3) الرواد — مستوحاة من التصميم الأول (مثلثات ملونة + جدول نظيف)
-// =====================================================================
-function aseel() {
-  const BL = "2E3A9E", RD = "E53935", GN = "2E9E4F", HD = "E3E6F3";
-  const kids = [];
-  // رأس: العنوان + الحقول يمين / الشعار يسار
-  const lw = 1500, vw = 3800;
-  kids.push(table([5400, 4806], [row([
-    cell([
-      p(t("فاتورة مبيعات", { bold: true, size: 26, color: BL }), { align: "center" }),
-      p(t("I N V O I C E", { bold: true, size: 11, color: "333333", spacing: 120, ltr: true }), { align: "center", after: 220 }),
-      table([lw, vw], [
-        row(fieldRow("اسم العميل :", lw, vw)),
-        row(fieldRow("التاريخ :", lw, vw)),
-        row(fieldRow("رقم الفاتورة :", lw, vw)),
-      ]),
-    ], { w: 5400, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-    cell([p(t("الرواد", { bold: true, size: 36, color: BL }), { align: "center" }), p(t("للبلاستيك", { bold: true, size: 14, color: GN }), { align: "center" }), p(t("ومواد التعبئة والتغليف", { bold: true, size: 10, color: RD }), { align: "center", after: 80 }), p(img("aseel_motif.png", 96, 24), { align: "center" })], { w: 4806 }),
-  ])]));
-  kids.push(spacer(220));
-
-  // جدول الأصناف
-  const W = [900, 1100, 1700, 4006, 2500];
-  const hd = ["رقم", "الكمية", "السعر", "وصف المنتج", "الإجمالي"];
-  const b = allBorders(line("6B6B6B", 6));
-  const rows = [row(hd.map((h, i) => cell(p(t(h, { bold: true, size: 10.5, color: BL }), { align: "center" }), { w: W[i], fill: HD, borders: b })), 460)];
-  for (let i = 1; i <= 14; i++) {
-    rows.push(row(W.map((w, c) => cell(p(t(c === 0 ? i : "", { bold: c === 0 }), { align: "center" }), { w, borders: b, fill: c === 0 ? "F7F8FC" : undefined })), 400));
-  }
+  const rows = [];
+  for (let i = 1; i <= 10; i++) rows.push(row(W.map((w, c) => cell(p(t(c === 0 ? i : "", { bold: true, size: 11 }), { align: "center" }), { w, borders: allBorders(BD) })), 580));
   kids.push(table(W, rows));
-
-  // صفوف الإجمالي
-  const sw = [6206, 4000];
-  const sum = (l, fill, col, h) => row([
-    cell(p(t(l, { bold: true, size: 10.5, color: col })), { w: sw[0], fill, borders: allBorders(line("6B6B6B", 6)) }),
-    cell(p(t("ج.م", { size: 9, color: col === "FFFFFF" ? "FFFFFF" : "777777", bold: true }), { align: "end" }), { w: sw[1], fill: fill === BL ? BL : "FFFFFF", borders: allBorders(line("6B6B6B", 6)) }),
-  ], h);
-  kids.push(table(sw, [
-    sum("الإجمالي قبل الضريبة :", "F0F0F0", "222222", 400),
-    sum("الخصم :", "F0F0F0", "222222", 400),
-    sum("ضريبة القيمة المضافة (14%) :", "F0F0F0", "222222", 400),
-    sum("الإجمالي المطلوب سداده :", BL, "FFFFFF", 460),
-  ]));
-  kids.push(spacer(220));
-
-  // ملاحظات + تواصل
-  const notes = [
-    p(t("ملاحظات :", { bold: true, size: 12, color: BL }), { after: 80 }),
-    writeLines(4, 5600, "777777"),
-  ];
-  const contact = [
-    p([t("هاتف: ", { bold: true, color: RD }), t("..............................")], { after: 80 }),
-    p([t("البريد: ", { bold: true, color: GN }), t("..............................")], { after: 80 }),
-    p([t("العنوان: ", { bold: true, color: BL }), t("..............................")], { after: 160 }),
-    p(t("الختم والتوقيع", { bold: true }), { align: "center", after: 320 }),
-    p(t("..............................", { color: "999999" }), { align: "center" }),
-  ];
-  kids.push(table([5600, 406, 4200], [row([
-    cell(notes, { w: 5600, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-    cell(p(t("")), { w: 406 }),
-    cell(contact, { w: 4200, v: VerticalAlign.TOP, fill: "F7F8FC", m: { top: 140, bottom: 140, left: 180, right: 180 }, borders: { ...noBorders, right: line(GN, 24) } }),
+  // الإجمالي المطلوب سداده (أسفل يسار)
+  const tw = W[3] + W[4] - 400;
+  kids.push(table([CW - tw, tw], [row([blank(CW - tw), cell(p(t("الإجمالي المطلوب سداده :", { bold: true, size: 11 })), { w: tw, fill: HD, borders: allBorders(BD) })], 480)]));
+  kids.push(spacer(200));
+  // ملاحظات + أيقونات تواصل
+  const nw = 5300;
+  const lines = table([nw], [0, 1, 2].map(() => row([cell(p(t("")), { w: nw, borders: { ...noBorders, bottom: line("333333", 6) } })], 380)));
+  const icon = (f, label) => row([cell(p(img(f, 22, 22)), { w: 500, m: { top: 30, bottom: 30, left: 0, right: 0 } }), cell(p(t(label, { size: 10, color: "333333" })), { w: 4800 })]);
+  kids.push(table([nw, CW - nw], [row([
+    cell([p(t("ملاحظات :", { bold: true, size: 13 }), { after: 40 }), lines, spacer(200),
+      table([500, 4800], [icon("d1_phone.png", "......................................"), icon("d1_mail.png", "......................................"), icon("d1_pin.png", "......................................")]),
+    ], { w: nw, v: VerticalAlign.TOP, m: pad0 }),
+    blank(CW - nw),
   ])]));
-  kids.push(spacer(160));
-  kids.push(p(t("الرواد للبلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: BL }), { align: "center" }));
-
   return save(makeDoc(kids,
-    [floatImg("aseel_tr.png", 230, 120, 794 - 230, 0)],
-    [floatImg("aseel_bl.png", 230, 120, 0, 1123 - 120)]), "فاتورة_الرواد.docx");
+    [floatImg("d1_tr.png", 300, 80, 794 - 300, 0)],
+    [floatImg("d1_bl.png", 260, 135, 0, 1123 - 135)],
+    { top: 1400, bottom: 600, side: 1050 }), "فاتورة_الرواد.docx");
 }
 
-(async () => { await wytc(); await gawhara(); await aseel(); })();
+// =====================================================================
+// التصميم الثاني (أسود/أصفر) — اللؤلؤة لصناعة البلاستيك
+// =====================================================================
+function design2() {
+  const BK = "0A0A0A", YL = "FFE016", GR = "F4F4F4", kids = [];
+  // داخل المنطقة الرمادية: العنوان يمين
+  kids.push(table([5200, CW - 5200], [row([
+    cell([
+      p(t("فاتورة مبيعات", { bold: true, size: 28, color: "333333" }), { after: 60 }),
+      p(t("اللؤلؤة لصناعة البلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10.5, color: "555555" }), { after: 40 }),
+      p([t("رقم الفاتورة: ", { size: 9.5, color: "555555" }), t("...............   ", { size: 9.5, color: "999999" }), t("التاريخ: ", { size: 9.5, color: "555555" }), t("...............", { size: 9.5, color: "999999" })]),
+    ], { w: 5200, m: pad0 }),
+    blank(CW - 5200),
+  ])]));
+  kids.push(spacer(1250));
+  // الحقول (عمودان كما في الصورة)
+  const lw = 1900, vw = 3000, gap = CW - 2 * (lw + vw);
+  const r2 = (a, b, h) => row([...fieldRow(a, lw, vw, { size: 10.5 }), blank(gap), ...fieldRow(b, lw, vw, { size: 10.5 })], h);
+  kids.push(table([lw, vw, gap, lw, vw], [r2("اسم العميل :", "العنوان :", 520), r2("اسم البنك :", "رقم الهاتف الاول :"), r2("رقم الحساب :", "رقم الهاتف الثاني :")]));
+  kids.push(spacer(380));
+  // الجدول: خانات رأس سوداء منفصلة + عمود الرقم أسود
+  const W = [1000, 160, 4386, 160, 1500, 1500, 1500]; // الرقم، فاصل، اسم المنتج، فاصل، السعر، الكمية، اجمالي
+  const sep = { ...noBorders, left: line("FFFFFF", 12), right: line("FFFFFF", 12) };
+  const hd = ["الرقم", null, "أسم المنتج", null, "السعر", "الكمية", "اجمالي"];
+  const rows = [row(hd.map((h, i) => h === null ? blank(W[i]) : cell(p(t(h, { bold: true, color: "FFFFFF", size: 10.5 }), { align: "center" }), { w: W[i], fill: BK, borders: sep })), 470)];
+  rows.push(row(W.map((w) => cell(p(t("", { size: 4 })), { w, m: pad0 })), 120));
+  for (let i = 1; i <= 8; i++) {
+    const f = i % 2 ? GR : "FFFFFF";
+    rows.push(row(W.map((w, c) => {
+      if (c === 0) return cell(p(t(i, { color: "FFFFFF", size: 11 }), { align: "center" }), { w, fill: BK });
+      if (c === 1) return blank(w);
+      return cell(p(t("", { size: 10.5 }), { align: c === 2 ? "start" : "center" }), { w, fill: c === 3 ? f : f });
+    }), 470));
+  }
+  kids.push(table(W, rows));
+  kids.push(spacer(360));
+  // الإجماليات يسار + سياسة الاسترجاع يمين
+  const tw = [1900, 2200];
+  const tot = (l, fill, h) => row([cell(p(t(l, { bold: true, size: 11 })), { w: tw[0], fill }), cell(p(t("", { size: 11 }), { align: "end" }), { w: tw[1], fill })], h || 440);
+  const totals = table(tw, [tot("الاجمالي"), tot("الضريبة"), row([blank(tw[0]), blank(tw[1])], 120), tot("الاجمالي", YL, 480)]);
+  const rw = CW - 4100 - 500;
+  kids.push(table([rw, 500, 4100], [row([
+    cell([p(t("الاستبدال و الاسترجاع :", { bold: true, size: 11 }), { before: 300, after: 120 }),
+      p(t("الإستبدال والإسترجاع خلال فترة الـ 14 يوم من تاريخ أستلام السلعة .", { size: 10.5, color: "333333" }), { line: 320 })],
+      { w: rw, v: VerticalAlign.TOP, m: pad0 }),
+    blank(500),
+    cell(totals, { w: 4100, v: VerticalAlign.TOP, m: pad0 }),
+  ])]));
+  kids.push(spacer(200));
+  kids.push(table([rw, 500, 4100], [row([
+    cell([p(t("توقيع البائع", { bold: true, size: 14 }), { align: "center", before: 300, after: 420 }), p(t("____________________"), { align: "center" })], { w: rw, v: VerticalAlign.TOP, m: pad0 }),
+    blank(500),
+    cell([p(t("Amount Due :", { size: 14, color: "222222", ltr: true }), { ltrPara: true }), p(t("..................", { bold: true, size: 26, ltr: true }), { ltrPara: true })], { w: 4100, v: VerticalAlign.TOP, m: pad0 }),
+  ])]));
+  return save(makeDoc(kids,
+    [floatImg("d2_top.png", 794, 258, 0, 0)],
+    [floatImg("d2_bottom.png", 794, 48, 0, 1123 - 48)],
+    { top: 1650, side: 1100 }), "فاتورة_اللؤلؤة.docx");
+}
+
+// =====================================================================
+// التصميم الثالث (جدول بني على طريقة Excel) — النخبة للصناعات البلاستيكية
+// =====================================================================
+function design3() {
+  const BK = "000000", OR = "E0963F", TAN = "C9B48A", BR = "B05A0A", DBR = "68332D", LB = "DCF0FB", GRY = "A8A9AD", LG = "F3F3F3";
+  const kids = [];
+  const k = (l, w, col = OR) => cell(p(t(l, { size: 9, color: col, bold: true })), { w, m: { top: 30, bottom: 30, left: 40, right: 40 } });
+  const meta = table([1400, 1700], ["رقم الفاتورة:", "تاريخ الفاتورة:", "تاريخ الاستحقاق:"].map((l) => row([k(l, 1400), cell(p(t("..................", { size: 9, color: OR, ltr: true }), { align: "end" }), { w: 1700, m: { top: 30, bottom: 30, left: 40, right: 40 } })])));
+  // الرأس: يمين أسود (اسم مختصر) | وسط ذهبي (بيانات الشركة) | يسار أسود (العنوان + بيانات الفاتورة)
+  const H = [1700, 4106, 4300];
+  const wHead = H.reduce((a, b) => a + b);
+  kids.push(table(H, [row([
+    cell([p(t("النخبة", { bold: true, size: 16, color: TAN }), { align: "center" })], { w: H[0], fill: BK }),
+    cell([
+      p(t("................@gmail.com", { bold: true, size: 10, color: "111111", ltr: true }), { align: "center", ltrPara: true }),
+      p(t("هاتف: .....................", { bold: true, size: 10, color: "111111" }), { align: "center" }),
+      p(t("العنوان: ...........................", { bold: true, size: 9.5, color: "111111" }), { align: "center", after: 60 }),
+      p(t("النخبة للصناعات البلاستيكية", { bold: true, size: 12, color: "111111" }), { align: "center" }),
+      p(t("والعبوات ومواد التغليف", { bold: true, size: 10.5, color: "111111" }), { align: "center" }),
+    ], { w: H[1], fill: TAN, m: { top: 100, bottom: 100, left: 100, right: 100 } }),
+    cell([p(t("فاتورة مبيعات", { bold: true, size: 22, color: OR }), { align: "center", after: 120 }), meta], { w: H[2], fill: BK, m: { top: 120, bottom: 120, left: 120, right: 120 } }),
+  ], 2300)]));
+  // فاتورة إلى (صندوق رمادي)
+  const cw = [1400, 4106, 1800, 2800];
+  const ci = (l, v, bold) => cell(p(t(l, { bold: !!bold, size: 11 })), { w: v, fill: LG });
+  kids.push(table(cw, [
+    row([ci("فاتورة إلى:", cw[0], true), cell(p(t("....................................", { color: "999999" })), { w: cw[1], fill: LG }), cell(p(t("")), { w: cw[2], fill: LG }), cell(p(t("الموقع", { bold: true }), { align: "center" }), { w: cw[3], fill: LG })], 520),
+    row([ci("العنوان", cw[0], true), cell(p(t("....................................", { color: "999999" })), { w: cw[1], fill: LG }), cell(p(t("")), { w: cw[2], fill: LG }), cell(p(t("....................", { color: "999999" }), { align: "center" }), { w: cw[3], fill: LG })], 460),
+    row([ci("جوال", cw[0], true), cell(p(t("....................................", { color: "999999" })), { w: cw[1], fill: LG }), cell(p(t("")), { w: cw[2], fill: LG }), cell(p(t("")), { w: cw[3], fill: LG })], 460),
+  ], { borders: { ...allBorders(line("555555", 6)), insideHorizontal: NONE, insideVertical: NONE } }));
+  // جدول الأصناف
+  const W = [600, 1000, 2500, 2806, 1600, 1600]; // بند، الكمية، الصنف، النوع، سعر الوحدة، المبلغ
+  const b = allBorders(line("555555", 6));
+  const hd = ["بند", "الكمية", "الصنف", "النوع", "سعر الوحدة", "المبلغ"];
+  const rows = [row(hd.map((h, i) => cell(p(t(h, { bold: true, color: "FFFFFF", size: 11 }), { align: "center" }), { w: W[i], fill: BR, borders: b })), 460)];
+  for (let i = 1; i <= 13; i++) {
+    const f = i % 2 ? "FFFFFF" : LG;
+    rows.push(row(W.map((w, c) => cell(p(t(c === 0 ? i : "", { size: 11, bold: c === 0 }), { align: "center" }), { w, borders: b, fill: c === 2 && i % 2 === 0 ? LB : f })), 600));
+  }
+  kids.push(table(W, rows));
+  // الإجماليات
+  const sw = [W[0] + W[1] + W[2] + W[3], W[4], W[5]];
+  const sr = (l, fill, col, h) => row([blank(sw[0]), cell(p(t(l, { bold: true, size: 11, color: col })), { w: sw[1], fill }), cell(p(t("0.00 ج.م", { bold: true, size: 10.5, color: col }), { align: "center" }), { w: sw[2], fill })], h);
+  kids.push(table(sw, [
+    row([blank(sw[0]), cell(p(t("الإجمالي :", { bold: true, size: 11 })), { w: sw[1], fill: GRY }), cell(p(t("0.00 ج.م", { bold: true, size: 10.5 }), { align: "center" }), { w: sw[2], fill: GRY })], 460),
+    row([blank(sw[0]), cell(p(t("قيمة الخصم", { bold: true, size: 11 })), { w: sw[1], fill: GRY }), cell(p(t("0.00 ج.م", { bold: true, size: 10.5 }), { align: "center" }), { w: sw[2], fill: GRY })], 460),
+    row([blank(sw[0]), cell(p(t("")), { w: sw[1], fill: GRY }), cell(p(t("")), { w: sw[2], fill: GRY })], 300),
+    sr("المجموع", DBR, "FFFFFF", 460),
+  ]));
+  kids.push(table([wHead], [row([cell(p(t("شكراً لتعاملك معنا!", { bold: true, size: 13, color: "FFFFFF" }), { align: "center" }), { w: wHead, fill: DBR })], 480)]));
+  return save(makeDoc(kids, [], [], { top: 800, bottom: 600, side: 900, pageBorder: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 } }), "فاتورة_النخبة.docx");
+}
+
+(async () => { await design1(); await design2(); await design3(); })();
