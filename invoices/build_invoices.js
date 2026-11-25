@@ -106,7 +106,7 @@ function makeDoc(children, headerKids, footerKids) {
 }
 
 // =====================================================================
-// 1) ويتكو — مستوحاة من التصميم الثالث (رأس داكن + جدول برتقالي/بني)
+// 1) النخبة — مستوحاة من التصميم الثالث (رأس داكن + جدول برتقالي/بني)
 // =====================================================================
 function wytc() {
   const OR = "E8532B", DK = "2D2D2D", TINT = "FDEDE6", GR = "F3F3F3";
@@ -119,12 +119,12 @@ function wytc() {
     cell(p(t("", { size: 9, color: "FFFFFF" })), { w: 1700, m: { top: 30, bottom: 30, left: 40, right: 40 }, borders: { ...noBorders, bottom: line("8A8A8A", 4, BorderStyle.DOTTED) } }),
   ])));
   kids.push(table([2600, 4006, 3600], [row([
-    cell([p(img("wytc_logo.png", 150, 59), { align: "center" })], { w: 2600, fill: "FFFFFF", borders: { ...noBorders, top: line(OR, 24), bottom: line(OR, 24) } }),
+    cell([p(t("النخبة", { bold: true, size: 26, color: OR }), { align: "center" }), p(t("AL-NOKHBA PLASTICS", { bold: true, size: 7.5, color: DK, spacing: 40, ltr: true }), { align: "center" })], { w: 2600, fill: "FFFFFF", borders: { ...noBorders, top: line(OR, 24), bottom: line(OR, 24) } }),
     cell([
-      p(t("ويتكو للاستثمار الصناعي", { bold: true, size: 14, color: DK }), { align: "center" }),
-      p(t("وتصنيع العبوات البلاستيكية", { bold: true, size: 12, color: OR }), { align: "center", after: 80 }),
-      p(t("بلوك 3 - القطعة 18، شرق المنطقة الصناعية الثانية", { size: 8.5, color: "555555" }), { align: "center" }),
-      p(t("برج العرب، الإسكندرية", { size: 8.5, color: "555555" }), { align: "center", after: 40 }),
+      p(t("النخبة للصناعات البلاستيكية", { bold: true, size: 14, color: DK }), { align: "center" }),
+      p(t("والعبوات ومواد التغليف", { bold: true, size: 12, color: OR }), { align: "center", after: 80 }),
+      p(t("العنوان: ................................................", { size: 8.5, color: "555555" }), { align: "center" }),
+      p(t("السجل التجاري: ....................", { size: 8.5, color: "555555" }), { align: "center", after: 40 }),
       p(t("هاتف: ................   البريد: ................", { size: 8.5, color: "555555" }), { align: "center" }),
     ], { w: 4006, fill: TINT, borders: { ...noBorders, top: line(OR, 24), bottom: line(OR, 24) } }),
     cell([
@@ -188,11 +188,11 @@ function wytc() {
   kids.push(spacer(240));
   kids.push(table([CW], [row([cell(p(t("شكراً لتعاملكم معنا!", { bold: true, size: 12, color: "FFFFFF" }), { align: "center" }), { w: CW, fill: "6B2E17", borders: { ...noBorders, top: line(OR, 18) } })], 480)]));
 
-  return save(makeDoc(kids, [floatImg("wytc_top.png", 794, 14, 0, 0)], [floatImg("wytc_bottom.png", 794, 14, 0, 1123 - 14)]), "فاتورة_ويتكو_WYTC.docx");
+  return save(makeDoc(kids, [floatImg("wytc_top.png", 794, 14, 0, 0)], [floatImg("wytc_bottom.png", 794, 14, 0, 1123 - 14)]), "فاتورة_النخبة.docx");
 }
 
 // =====================================================================
-// 2) الجوهرة — مستوحاة من التصميم الثاني (أشرطة مائلة + أعمدة داكنة)
+// 2) اللؤلؤة — مستوحاة من التصميم الثاني (أشرطة مائلة + أعمدة داكنة)
 // =====================================================================
 function gawhara() {
   const BL = "2F6DB5", DK = "1F2A3A", LG = "F3F5F8";
@@ -207,7 +207,7 @@ function gawhara() {
         row(fieldRow("التاريخ:", 1500, 2600, { size: 9.5 })),
       ]),
     ], { w: 5103, fill: LG, m: { top: 260, bottom: 260, left: 200, right: 300 } }),
-    cell([p(img("gawhara_logo.png", 300, 96), { align: "center" })], { w: 5103, fill: LG, m: { top: 200, bottom: 200, left: 200, right: 100 } }),
+    cell([p(t("اللؤلؤة", { bold: true, size: 34, color: BL }), { align: "center" }), p(t("لصناعة البلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: DK }), { align: "center", before: 40 })], { w: 5103, fill: LG, m: { top: 200, bottom: 200, left: 200, right: 100 } }),
   ])]));
   kids.push(spacer(260));
 
@@ -268,14 +268,14 @@ function gawhara() {
     cell(left, { w: 4400, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
   ])]));
   kids.push(spacer(200));
-  kids.push(p(t("الجوهرة لصناعة البلاستيك ومواد التعبئة والتغليف — تأسست سنة 1990", { size: 9, color: BL, bold: true }), { align: "center" }));
+  kids.push(p(t("اللؤلؤة لصناعة البلاستيك ومواد التعبئة والتغليف", { size: 9, color: BL, bold: true }), { align: "center" }));
   kids.push(p(t("العنوان: ........................   هاتف: ........................", { size: 8.5, color: "777777" }), { align: "center" }));
 
-  return save(makeDoc(kids, [floatImg("gawhara_top.png", 794, 40, 0, 0)], [floatImg("gawhara_bottom.png", 794, 40, 0, 1123 - 40)]), "فاتورة_الجوهرة.docx");
+  return save(makeDoc(kids, [floatImg("gawhara_top.png", 794, 40, 0, 0)], [floatImg("gawhara_bottom.png", 794, 40, 0, 1123 - 40)]), "فاتورة_اللؤلؤة.docx");
 }
 
 // =====================================================================
-// 3) الأصيل — مستوحاة من التصميم الأول (مثلثات ملونة + جدول نظيف)
+// 3) الرواد — مستوحاة من التصميم الأول (مثلثات ملونة + جدول نظيف)
 // =====================================================================
 function aseel() {
   const BL = "2E3A9E", RD = "E53935", GN = "2E9E4F", HD = "E3E6F3";
@@ -292,7 +292,7 @@ function aseel() {
         row(fieldRow("رقم الفاتورة :", lw, vw)),
       ]),
     ], { w: 5400, v: VerticalAlign.TOP, m: { top: 0, bottom: 0, left: 0, right: 0 } }),
-    cell([p(img("aseel_logo.png", 104, 185), { align: "center" }), p(img("aseel_motif.png", 96, 24), { align: "center", before: 60 })], { w: 4806 }),
+    cell([p(t("الرواد", { bold: true, size: 36, color: BL }), { align: "center" }), p(t("للبلاستيك", { bold: true, size: 14, color: GN }), { align: "center" }), p(t("ومواد التعبئة والتغليف", { bold: true, size: 10, color: RD }), { align: "center", after: 80 }), p(img("aseel_motif.png", 96, 24), { align: "center" })], { w: 4806 }),
   ])]));
   kids.push(spacer(220));
 
@@ -338,11 +338,11 @@ function aseel() {
     cell(contact, { w: 4200, v: VerticalAlign.TOP, fill: "F7F8FC", m: { top: 140, bottom: 140, left: 180, right: 180 }, borders: { ...noBorders, right: line(GN, 24) } }),
   ])]));
   kids.push(spacer(160));
-  kids.push(p(t("الأصيل للبلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: BL }), { align: "center" }));
+  kids.push(p(t("الرواد للبلاستيك ومواد التعبئة والتغليف", { bold: true, size: 10, color: BL }), { align: "center" }));
 
   return save(makeDoc(kids,
     [floatImg("aseel_tr.png", 230, 120, 794 - 230, 0)],
-    [floatImg("aseel_bl.png", 230, 120, 0, 1123 - 120)]), "فاتورة_الأصيل.docx");
+    [floatImg("aseel_bl.png", 230, 120, 0, 1123 - 120)]), "فاتورة_الرواد.docx");
 }
 
 (async () => { await wytc(); await gawhara(); await aseel(); })();
